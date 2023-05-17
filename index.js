@@ -1,8 +1,10 @@
-const Discord = require("discord.js")
+const Discord = require("discord.js");
 const fs = require('node:fs');
-const chatGPT = require('./chat-gpt.js')
+const chatGPT = require('./chat-gpt.js');
 const path = require('node:path');
-const token = process.env.TOKEN
+const dbClient = require('./database-client.js');
+const dbActions = require('./database-actions.js');
+const token = process.env.TOKEN;
 require("./deploy-commands.js");
 const { GatewayIntentBits, Partials, Client, Routes, REST } = Discord;
 const client = new Client({
@@ -18,8 +20,15 @@ const client = new Client({
 })
 
 client.on("ready", () => {
-  console.log(`Logged in as ${client.user.tag}!`)
-})
+  console.log(`Logged in as ${client.user.tag}!`);
+  setInterval(()=>{ 
+    dbActions.getNotifications(dbClient).then(result=>{
+                  const time = new Date().getTime();
+                   result.rows.forEach(row=> {if(row.duration<=time) {client.users.fetch(row.uid).then(user => { msg= row.msg??"Just reminding that you have something to do now!";user.send(msg)})
+dbActions.cancelNotification(dbClient,row.id);  }  
+});})},5000);
+                
+}); 
 client.on('messageCreate', message => {
 
 });
