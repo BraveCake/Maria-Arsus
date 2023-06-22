@@ -12,15 +12,15 @@ module.exports = {
         .setRequired(true)),
 
   async execute(interaction) {
+    await interaction.deferReply();
     const videoUrl = interaction.options.get('url').value;
     const videoID = ytdl.getURLVideoID(videoUrl);
     const videoTitle = (await ytdl.getInfo(videoID)).videoDetails.title;
     const filePath = `audio/${videoTitle}.mp3`;
     const stream = ytdl(videoUrl, { filter: 'audioonly' }).pipe(fs.createWriteStream(filePath));
-   await new Promise(resolve => stream.on("finish", resolve)); 
-    await  interaction.deferReply();
+    await new Promise(resolve => stream.on("finish", resolve));
     await interaction.editReply({ content: 'Here is the file you requested:', files: [filePath] });
-  fs.unlinkSync(filePath);
+    fs.unlinkSync(filePath);
 
 
   }
