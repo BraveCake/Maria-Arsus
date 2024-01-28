@@ -1,10 +1,9 @@
+require('dotenv').config()
 const Discord = require("discord.js");
 const fs = require('node:fs');
-const chatGPT = require('./chat-gpt.js');
 const path = require('node:path');
 const token = process.env.TOKEN;
 require("./deploy-commands.js");
-require("./keep-alive.js");
 const { GatewayIntentBits, Partials, Client, Routes, REST } = Discord;
 const client = new Client({
   intents: [
