@@ -2,36 +2,28 @@ const Discord = require("discord.js");
 const fs = require('node:fs');
 const chatGPT = require('./chat-gpt.js');
 const path = require('node:path');
-const dbClient = require('./database-client.js');
-const dbActions = require('./database-actions.js');
 const token = process.env.TOKEN;
 require("./deploy-commands.js");
+require("./keep-alive.js");
 const { GatewayIntentBits, Partials, Client, Routes, REST } = Discord;
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildPresences,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
   ],
   partials: [Partials.Channel, Partials.Message, Partials.User, Partials.GuildMember, Partials.Reaction]
 })
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
-  setInterval(()=>{ 
-    dbActions.getNotifications(dbClient).then(result=>{
-                  const time = new Date().getTime();
-                   result.rows.forEach(row=> {if(row.duration<=time) {client.users.fetch(row.uid).then(user => { msg= row.msg??"Just reminding that you have something to do now!";user.send(msg)})
-dbActions.cancelNotification(dbClient,row.id);  }  
-});})},5000);
-                
-}); 
-client.on('messageCreate', message => {
 
 });
+
 client.commands = new Discord.Collection();
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
@@ -51,7 +43,7 @@ for (const folder of commandFolders) {
 }
 
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isChatInputCommand()) return; 
+  if (!interaction.isChatInputCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
 
