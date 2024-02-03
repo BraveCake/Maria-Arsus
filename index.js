@@ -20,6 +20,10 @@ const client = new Client({
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
+  const status= fs.readFileSync("bot status.txt")+"";
+  client.user.setActivity(status, {
+    type:1, /* 0 = Playing, 1= Streaming, 2= Listening, 3= Watching, 4= Custom, 5 = competing   please note that some of the status are bugged or require modifying the code base */
+  });
 
 });
 
