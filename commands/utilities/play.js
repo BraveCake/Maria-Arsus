@@ -5,7 +5,7 @@ const {
   createAudioResource,
   joinVoiceChannel,
 } = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
+const ytdl = require('@distube/ytdl-core');
 
 module.exports = {
   data: new SlashCommandBuilder()

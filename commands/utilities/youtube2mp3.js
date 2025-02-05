@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const ytdl = require('ytdl-core');
+const ytdl = require('@distube/ytdl-core');
 const fs = require('fs');
 const { MessagePayload } = require('discord.js');
 module.exports = {
