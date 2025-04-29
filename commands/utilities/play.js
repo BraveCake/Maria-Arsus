@@ -1,11 +1,14 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { YtDlp } = require('ytdlp-nodejs');
+const ytdlp = new YtDlp();
+const { PassThrough } = require('stream');
 const {
   AudioPlayerStatus,
   createAudioPlayer,
   createAudioResource,
   joinVoiceChannel,
 } = require('@discordjs/voice');
-const ytdl = require('@distube/ytdl-core');
+
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -28,7 +31,18 @@ module.exports = {
       guildId: interaction.guild.id,
       adapterCreator: interaction.guild.voiceAdapterCreator,
     });
-    const stream = await ytdl(url, { filter: 'audioonly' });
+    const streamPipe = ytdlp.stream(url, {
+        format: {
+          filter: 'audioonly',
+          type: 'mp3',
+          quality: 'highest',
+        },
+        onProgress: (progress) => {
+          console.log(progress);
+        },
+      });
+	const stream = new PassThrough();
+	await streamPipe.pipe(stream);
     const player = createAudioPlayer();
     const resource = createAudioResource(stream);
     connection.subscribe(player);

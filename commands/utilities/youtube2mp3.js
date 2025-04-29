@@ -1,30 +1,63 @@
-const { SlashCommandBuilder } = require('discord.js');
-const ytdl = require('@distube/ytdl-core');
+const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
+const { YtDlp } = require('ytdlp-nodejs');
+const { createWriteStream } = require('fs');
+const { promisify } = require('util');
 const fs = require('fs');
-const { MessagePayload } = require('discord.js');
+const path = require('path');
+const stream = require('stream');
+const sanitize = require('sanitize-filename');
+const ytdlp = new YtDlp();
+
+const pipeline = promisify(stream.pipeline);
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('youtube2mp3')
-    .setDescription('Converts your video into mp3 file')
+    .setDescription('Download YouTube audio as mp3')
     .addStringOption(option =>
       option.setName('url')
-        .setDescription('youtube video url you want to convert into mp3')
-        .setRequired(true)),
+        .setDescription('The YouTube video URL')
+        .setRequired(true)
+    ),
 
   async execute(interaction) {
-    await interaction.deferReply();
-    const videoUrl = interaction.options.get('url').value;
-	  try{
-      const videoID = ytdl.getURLVideoID(videoUrl);
-      const videoTitle = (await ytdl.getInfo(videoID)).videoDetails.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      const filePath = `audio/${videoTitle}.mp3`;
-      const stream = ytdl(videoUrl, { filter: 'audioonly' }).pipe(fs.createWriteStream(filePath));
-      await new Promise(resolve => stream.on("finish", resolve));
-      await interaction.editReply({ content: 'Here is the file you\'ve requested:', files: [filePath] });
-      fs.unlinkSync(filePath);
+    const url = interaction.options.getString('url');
+    await interaction.reply(`🎶 Downloading audio from: ${url}`);
+
+    try {
+      // Fetch video info to get the title
+      const rawTitle = await ytdlp.getTitleAsync(url);
+      const safeTitle = sanitize(rawTitle) || `audio-${Date.now()}`;
+      const outputFile = path.join(__dirname, '..', '..', 'audio', `${safeTitle}.mp3`);
+
+      // Download and save the audio stream
+      const audioStream = ytdlp.stream(url, {
+        format: {
+          filter: 'audioonly',
+          type: 'mp3',
+          quality: 'highest',
+        },
+        onProgress: (progress) => {
+          console.log(progress);
+        },
+      });
+
+      const fileStream = createWriteStream(outputFile);
+      await audioStream.pipeAsync(fileStream);
+
+
+      // Create an attachment and send it to Discord
+      await interaction.editReply({
+        content: `✅ Download complete: \`${safeTitle}\``,
+        files: [outputFile],
+      });
+	  fs.unlinkSync(outputFile);
+
+    } catch (error) {
+      console.error(error);
+      await interaction.followUp({
+        content: '❌ Failed to download audio. Check the console for errors.',
+      });
     }
-    catch({name,msg}){
-      console.log(`an error ${name} has occurred ${msg}`);
-     }
-  }
+  },
 };
